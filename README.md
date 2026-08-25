@@ -47,15 +47,34 @@ docker run --name py-crasher-unreal `
 	-p 8000:8000 `
 	-e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN" `
 	-v "${PWD}/crashes:/app/crashes" `
+	-v "${PWD}/logs:/app/logs" `
 	py-crasher-unreal
 ```
 
-The volume keeps crash archives on the host when the container is stopped or removed. The local `crashes` directory is created automatically if it does not already exist.
+The `crashes` volume keeps crash archives on the host, while the `logs` volume keeps the application log file when the container is stopped or removed. Both local directories are created automatically if they do not already exist.
+
+## Logging
+
+The application writes logs to both:
+
+- Docker standard output, available with `docker logs py-crasher-unreal`.
+- `logs/crash_reporter.log` inside the container.
+
+To change the log level, set `LOG_LEVEL` when starting the container. Supported values include `DEBUG`, `INFO`, `WARNING`, and `ERROR`:
+
+```powershell
+docker run --name py-crasher-unreal `
+	-p 8000:8000 `
+	-e "LOG_LEVEL=DEBUG" `
+	-v "${PWD}/crashes:/app/crashes" `
+	-v "${PWD}/logs:/app/logs" `
+	py-crasher-unreal
+```
 
 To run without Discord notifications, omit the `-e` option:
 
 ```powershell
-docker run --name py-crasher-unreal -p 8000:8000 py-crasher-unreal
+docker run --name py-crasher-unreal -p 8000:8000 -v "${PWD}/logs:/app/logs" py-crasher-unreal
 ```
 
 ## Configuration
@@ -63,6 +82,7 @@ docker run --name py-crasher-unreal -p 8000:8000 py-crasher-unreal
 | Variable          | Required | Description                                      | Default |
 | ----------------- | -------- | ------------------------------------------------ | ------- |
 | `DISCORD_WEBHOOK` | No       | Discord webhook URL used for crash notifications | Empty   |
+| `LOG_LEVEL`       | No       | Application logging level                         | `INFO`  |
 
 The HTTP server listens on `0.0.0.0:8000` inside the container. Port `8000` is exposed by the image and must be published with `-p` when the service needs to receive requests from outside Docker.
 
@@ -102,6 +122,7 @@ docker rm py-crasher-unreal
 - **No Discord message:** verify that `DISCORD_WEBHOOK` is set and that the webhook URL is valid.
 - **Port already in use:** publish another host port, for example `-p 8080:8000`.
 - **Crash archives disappear:** make sure the `-v "${PWD}/crashes:/app/crashes"` volume option is present.
+- **Need to inspect logs:** run `docker logs py-crasher-unreal` or inspect `logs/crash_reporter.log` on the host.
 - **Missing symbols:** place the required symbol files in the project `symbols/` directory before building the image.
 
 ## License

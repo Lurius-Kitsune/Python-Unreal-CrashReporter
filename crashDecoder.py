@@ -3,7 +3,10 @@ import os
 import struct
 import subprocess
 import tempfile
+import logging
 import xml.etree.ElementTree as Et
+
+_logger = logging.getLogger(__name__)
 
 class CrashDecoder:
     
@@ -55,7 +58,7 @@ class CrashDecoder:
         _readBuffer(4)    # padding
         _readBuffer(4)    # taille totale (ignorée)
         nb_files = struct.unpack('<I', _readBuffer(4))[0]
-        print(f"  Fichiers dans l'archive : {nb_files}")
+        _logger.info("Files in archive: %s", nb_files)
 
         # Lire chaque fichier
         for _ in range(nb_files):

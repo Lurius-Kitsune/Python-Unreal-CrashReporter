@@ -1,7 +1,10 @@
 import os
 import socket
 import http.server
+import logging
 from crashReporter import CrashReportHandler
+
+_logger = logging.getLogger(__name__)
 
 class Singleton(type):
     _instances = {}
@@ -33,13 +36,13 @@ class App(metaclass=Singleton):
         
     def _initHttpServer (self) -> None :
         self.httpd = http.server.HTTPServer(('', self.port), CrashReportHandler)
-        print(f'Serving on port {self.port}')
+        _logger.info("Serving on port %s", self.port)
         self.httpd.serve_forever()
         
     def run (self) -> None :
         try :
             self._initHttpServer()
         except KeyboardInterrupt :
-            print("\nShutting down server...")
+            _logger.info("Shutting down server...")
             self.httpd.server_close()
-            print("Server stopped.")
+            _logger.info("Server stopped.")

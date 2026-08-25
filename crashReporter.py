@@ -1,8 +1,11 @@
 import http.server
 from discordWs import DiscordWebhook
 import zlib, os, time, zipfile
+import logging
 from io import BytesIO
 from crashDecoder import CrashDecoder
+
+_logger = logging.getLogger(__name__)
 
 class CrashReportHandler(http.server.BaseHTTPRequestHandler):
 
@@ -11,7 +14,7 @@ class CrashReportHandler(http.server.BaseHTTPRequestHandler):
         raw_body       = self.rfile.read(content_length)
         timestamp      = time.strftime('%Y-%m-%d_%H-%M-%S')
 
-        print(f"\n[{timestamp}] POST — {len(raw_body)} bytes")
+        _logger.info("Received crash report: %s bytes", len(raw_body))
 
         # Le body entier est zlib compressé
         try:
@@ -25,14 +28,14 @@ class CrashReportHandler(http.server.BaseHTTPRequestHandler):
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
             for name, payload in _files.items():
                 zf.writestr(name, payload)
-                print(f"  + {name} ({len(payload)} bytes)")
+                _logger.info("Extracted %s (%s bytes)", name, len(payload))
 
         zip_bytes = zip_buffer.getvalue()
         from app import App
         zip_path  = os.path.join(App().output_dir, f"Crash_{timestamp}.zip")
         with open(zip_path, 'wb') as f:
             f.write(zip_bytes)
-        print(f"  → ZIP : {zip_path} ({len(zip_bytes)} bytes)")
+        _logger.info("Crash archive written to %s (%s bytes)", zip_path, len(zip_bytes))
 
         self.send_response(200)
         self.end_headers()

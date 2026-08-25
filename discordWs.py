@@ -1,6 +1,9 @@
 import os
 import requests
 import time
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class DiscordWebhook:
     
@@ -13,9 +16,8 @@ class DiscordWebhook:
         """
         
         WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK')
-        print(f"Discord webhook URL: {WEBHOOK_URL}")
         if(not WEBHOOK_URL or not str.__contains__(WEBHOOK_URL, "https://discord.com/api/webhooks/")):
-            print("Discord webhook URL is not set. Please set the DISCORD_WEBHOOK environment variable.")
+            _logger.warning("Discord webhook URL is not configured")
             return
         
         
@@ -75,9 +77,9 @@ class DiscordWebhook:
                     )
         
         if response.status_code == 204 or response.status_code == 200:
-            print("Crash report sent successfully to Discord.")
+            _logger.info("Crash report sent successfully to Discord")
         else:
-            print(f"Failed to send crash report to Discord. Status code: {response.status_code}, Response: {response.text}")
+            _logger.error("Failed to send crash report to Discord: HTTP %s, response: %s", response.status_code, response.text)
             
         
     
