@@ -44,11 +44,11 @@ The following command starts the service on port `8000` and configures Discord n
 
 ```powershell
 docker run --name py-crasher-unreal `
-	-p 8000:8000 `
-	-e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN" `
-	-v "${PWD}/crashes:/app/crashes" `
-	-v "${PWD}/logs:/app/logs" `
-	py-crasher-unreal
+ -p 8000:8000 `
+ -e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN" `
+ -v "${PWD}/crashes:/app/crashes" `
+ -v "${PWD}/logs:/app/logs" `
+ py-crasher-unreal
 ```
 
 The `crashes` volume keeps crash archives on the host, while the `logs` volume keeps the application log file when the container is stopped or removed. Both local directories are created automatically if they do not already exist.
@@ -64,11 +64,11 @@ To change the log level, set `LOG_LEVEL` when starting the container. Supported 
 
 ```powershell
 docker run --name py-crasher-unreal `
-	-p 8000:8000 `
-	-e "LOG_LEVEL=DEBUG" `
-	-v "${PWD}/crashes:/app/crashes" `
-	-v "${PWD}/logs:/app/logs" `
-	py-crasher-unreal
+ -p 8000:8000 `
+ -e "LOG_LEVEL=DEBUG" `
+ -v "${PWD}/crashes:/app/crashes" `
+ -v "${PWD}/logs:/app/logs" `
+ py-crasher-unreal
 ```
 
 To run without Discord notifications, omit the `-e` option:
@@ -82,7 +82,7 @@ docker run --name py-crasher-unreal -p 8000:8000 -v "${PWD}/logs:/app/logs" py-c
 | Variable          | Required | Description                                      | Default |
 | ----------------- | -------- | ------------------------------------------------ | ------- |
 | `DISCORD_WEBHOOK` | No       | Discord webhook URL used for crash notifications | Empty   |
-| `LOG_LEVEL`       | No       | Application logging level                         | `INFO`  |
+| `LOG_LEVEL`       | No       | Application logging level                        | `INFO`  |
 
 The HTTP server listens on `0.0.0.0:8000` inside the container. Port `8000` is exposed by the image and must be published with `-p` when the service needs to receive requests from outside Docker.
 
