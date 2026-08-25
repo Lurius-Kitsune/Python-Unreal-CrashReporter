@@ -1,15 +1,23 @@
+import os
 import requests
 import time
 
 class DiscordWebhook:
     
-    WEBHOOK_URL : str = "https://discord.com/api/webhooks/1517445305459671100/DZwvoYx5IZ2uaOKd0D5HDEfyjmJt5zsJbOG5ffHYYt6Ng5NiU1s7bcxHb9sXSP94BWKu"
+    WEBHOOK_URL : str = ""
     
     @staticmethod
     def sendCrashReportToServ(crashReportData : dict[str, str], _filePath : str|None) -> None:
         """
         Send the crash report data to the Discord webhook.
         """
+        
+        WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK')
+        print(f"Discord webhook URL: {WEBHOOK_URL}")
+        if(not WEBHOOK_URL or not str.__contains__(WEBHOOK_URL, "https://discord.com/api/webhooks/")):
+            print("Discord webhook URL is not set. Please set the DISCORD_WEBHOOK environment variable.")
+            return
+        
         
         _currentTime : str = time.strftime('%Y-%m-%d_%H_%M_%S');
         
@@ -53,16 +61,16 @@ class DiscordWebhook:
         
         
         if _filePath is None:
-            response = requests.post(DiscordWebhook.WEBHOOK_URL, json=payload)
+            response = requests.post(WEBHOOK_URL, json=payload)
         else:
             # 1. Embed en premier
-            response = requests.post(DiscordWebhook.WEBHOOK_URL, json=payload)
+            response = requests.post(WEBHOOK_URL, json=payload)
             
             if response.status_code in (200, 204):
                 # 2. Fichier ensuite
                 with open(_filePath, "rb") as f:
                     response = requests.post(
-                        DiscordWebhook.WEBHOOK_URL,
+                        WEBHOOK_URL,
                         files={"file": (f"CrashDump_{_currentTime}.zip", f, "application/zip")}
                     )
         

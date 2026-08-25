@@ -1,12 +1,14 @@
 from io import BytesIO
+import os
 import struct
 import subprocess
+import tempfile
 import xml.etree.ElementTree as Et
 
 class CrashDecoder:
     
     @staticmethod
-    def decodeUnrealCrash(self, data: bytes) -> dict[str, bytes]:
+    def decodeUnrealCrash(data: bytes) -> dict[str, bytes]:
         """
         Patterne trouver par Claude (IA) pour parser les fichiers .uecrash envoyés par le jeu.
         
@@ -30,56 +32,79 @@ class CrashDecoder:
           [4]    taille des données (uint32 LE)
           [N]    données brutes (non compressées)
         """
+        
         _buffer = BytesIO(data)
         _files = {}
 
+        def _readBuffer(size: int) -> bytes:
+            value = _buffer.read(size)
+            if len(value) != size:
+                raise ValueError("Invalid or truncated Unreal crash archive")
+            return value
+
         # Header
-        _buffer.read(4)    # magic CR1\x04
-        _buffer.read(3)    # unk
-        _buffer.read(256)  # nom rapport
+        if _readBuffer(4) != b"CR1\x04":
+            raise ValueError("Unsupported Unreal crash archive format")
+        _readBuffer(3)    # unk
+        _readBuffer(256)  # nom rapport
 
         # Entrée archive
-        _buffer.read(4)    # sep
-        _buffer.read(4)    # unk
-        _buffer.read(256)  # nom archive
-        _buffer.read(4)    # padding
-        _buffer.read(4)    # taille totale (ignorée)
-        nb_files = struct.unpack('<I', _buffer.read(4))[0]
+        _readBuffer(4)    # sep
+        _readBuffer(4)    # unk
+        _readBuffer(256)  # nom archive
+        _readBuffer(4)    # padding
+        _readBuffer(4)    # taille totale (ignorée)
+        nb_files = struct.unpack('<I', _readBuffer(4))[0]
         print(f"  Fichiers dans l'archive : {nb_files}")
 
         # Lire chaque fichier
         for _ in range(nb_files):
-            _buffer.read(4)   # sep
-            _buffer.read(4)   # unk
-            name = _buffer.read(256).rstrip(b'\x00').decode('utf-8', errors='replace')
+            _readBuffer(4)   # sep
+            _readBuffer(4)   # unk
+            name = _readBuffer(256).rstrip(b'\x00').decode('utf-8', errors='replace')
             if name.endswith('-xml'):
                 name = name[:-4] + '.xml' 
-            _buffer.read(4)   # padding
-            _size = struct.unpack('<I', _buffer.read(4))[0]
-            payload = _buffer.read(_size)
-            if(name.endswith('.dmp')):
-                payload = CrashDecoder.resolve_callstack(payload, "symbols")
+            _readBuffer(4)   # padding
+            _size = struct.unpack('<I', _readBuffer(4))[0]
+            payload = _readBuffer(_size)
+            if name.endswith('.dmp'):
+                callstack = CrashDecoder.resolve_callstack(payload, "symbols")
+                if callstack != payload:
+                    _files[f'{name}.stacktrace'] = callstack
             _files[name] = payload
 
         return _files
     
     @staticmethod
-    def GetXMLData(self, data: bytes) -> dict[str, str]:
+    def GetXMLData(data: bytes) -> dict[str, str]:
         """
         Récupère le contenu XML du crash report.
         """
-        _files = CrashDecoder.decodeUnrealCrash(self, data)
+        _files = CrashDecoder.decodeUnrealCrash(data)
         for name, payload in _files.items():
             if name.endswith('.xml'):
-                Et.fromstring(payload)  # Vérifie que le XML est valide
-                for child in Et.fromstring(payload):
-                    return {elem.tag: elem.text for elem in child}
-                return payload.decode('utf-8', errors='replace')
-        return ""
+                root = Et.fromstring(payload)
+                elements = next(iter(root), root)
+                if not list(elements):
+                    elements = root
+                return {elem.tag: elem.text or "" for elem in elements}
+        return {}
     
-    def resolve_callstack(dmp_path: str, symbols_dir: str) -> str:
-        result = subprocess.run(
-            ['minidump_stackwalk', dmp_path, symbols_dir],
-            capture_output=True, text=True
-        )
-        return result.stdout
+    @staticmethod
+    def resolve_callstack(dmp_data: bytes, symbols_dir: str) -> bytes:
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".dmp") as dump_file:
+                dump_file.write(dmp_data)
+                dump_path = dump_file.name
+            # result = subprocess.run(
+            #     ['minidump_stackwalk', dump_path, symbols_dir],
+            #     capture_output=True, text=True, check=False
+            # )
+            # if result.returncode == 0 and result.stdout:
+            #     return result.stdout.encode('utf-8')
+        except (OSError, subprocess.SubprocessError):
+            pass
+        finally:
+            if 'dump_path' in locals():
+                os.unlink(dump_path)
+        return dmp_data

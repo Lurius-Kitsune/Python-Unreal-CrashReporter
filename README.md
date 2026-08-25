@@ -1,0 +1,1 @@
+docker run -e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/..." -p 8000:8000 py-crasher-unreal 
