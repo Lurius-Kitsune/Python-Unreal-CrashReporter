@@ -1,0 +1,50 @@
+name: "Build Docker Image"
+run-name: "Build Docker Image @${{ github.run_id }}"
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    name: "⚒️ Build Docker Image"
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: "⬇ Checkout"
+        uses: actions/checkout@v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: downcase REPO
+        run: |
+          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >>${GITHUB_ENV}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER  }}/unreal-py-crashreport:latest
+            ghcr.io/${{ env.OWNER  }}/unreal-py-crashreport:${{ github.sha }}
