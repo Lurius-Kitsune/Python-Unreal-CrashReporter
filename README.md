@@ -25,7 +25,7 @@ A lightweight HTTP crash-reporting service for Unreal Engine applications. The s
 
 Run this command from the project directory:
 
-```powershell
+```bash
 docker build -t py-crasher-unreal .
 ```
 
@@ -42,13 +42,14 @@ Keep the webhook URL private. Anyone who has it can send messages to the configu
 
 The following command starts the service on port `8000` and configures Discord notifications:
 
-```powershell
-docker run --name py-crasher-unreal `
- -p 8000:8000 `
- -e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN" `
- -v "${PWD}/crashes:/app/crashes" `
- -v "${PWD}/logs:/app/logs" `
- py-crasher-unreal
+```bash
+docker run  -d --name py-crasher-unreal \
+ -p 8000:8000 \
+ --restart unless-stopped \
+ -e "DISCORD_WEBHOOK=https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN" \
+ -v "${PWD}/crashes:/app/crashes" \
+ -v "${PWD}/logs:/app/logs" \
+ ghcr.io/lurius-kitsune/unreal-py-crashreport:latest 
 ```
 
 The `crashes` volume keeps crash archives on the host, while the `logs` volume keeps the application log file when the container is stopped or removed. Both local directories are created automatically if they do not already exist.
@@ -62,18 +63,19 @@ The application writes logs to both:
 
 To change the log level, set `LOG_LEVEL` when starting the container. Supported values include `DEBUG`, `INFO`, `WARNING`, and `ERROR`:
 
-```powershell
-docker run --name py-crasher-unreal `
- -p 8000:8000 `
+```bash
+docker run -d --name py-crasher-unreal \
+ -p 8000:8000 \
+ --restart unless-stopped \
  -e "LOG_LEVEL=DEBUG" `
- -v "${PWD}/crashes:/app/crashes" `
- -v "${PWD}/logs:/app/logs" `
- py-crasher-unreal
+ -v "${PWD}/crashes:/app/crashes" \
+ -v "${PWD}/logs:/app/logs" \
+ ghcr.io/lurius-kitsune/unreal-py-crashreport:latest
 ```
 
 To run without Discord notifications, omit the `-e` option:
 
-```powershell
+```bash
 docker run --name py-crasher-unreal -p 8000:8000 -v "${PWD}/logs:/app/logs" py-crasher-unreal
 ```
 
