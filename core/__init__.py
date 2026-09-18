@@ -1,5 +1,5 @@
-from core.crashDecoder import CrashDecoder
-from core.crasherArchive import CrashArchive
-from core.EventEmitter import events
+from core.crash_decoder import CrashDecoder
+from core.crash_archive import CrashArchive
+from core.event_emitter import events
 
 __all__ = ["CrashDecoder", "CrashArchive", "events"]
