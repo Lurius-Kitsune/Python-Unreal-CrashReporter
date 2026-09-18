@@ -5,8 +5,12 @@ permissions:
   contents: write
 
 on:
-  push:
-    branches: ["main"]
+  workflow_call:
+    inputs:
+      platforms:
+        required: false
+        type: string
+        default: "linux/amd64,linux/arm64"
 
 jobs:
   build:
@@ -43,7 +47,7 @@ jobs:
         with:
           context: .
           file: dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.platforms }}
           push: true
           tags: |
             ghcr.io/${{ env.OWNER  }}/unreal-py-crashreport:latest
