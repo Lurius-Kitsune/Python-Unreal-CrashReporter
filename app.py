@@ -32,6 +32,9 @@ class App(metaclass=Singleton):
             raise Exception(f"Port {_port} is already in use. Please choose a different port.")
         else :
             self.port = _port
+        
+        events.on("crash_received")(self.decodeAndArchiveFiles)
+        events.on("crash_zipped")(self.onCrashZipped)
     
     def _checkPort (self, _port : int) -> bool :
         """_checkPort check if the port is opened
@@ -58,49 +61,48 @@ class App(metaclass=Singleton):
             self.httpd.server_close()
             _logger.info("Server stopped.")
             
-    @events.on("crash_received")
+    """@events.on("crash_received")"""
     def decodeAndArchiveFiles(self, _data : bytes):
         self.data = _data
         _files = CrashDecoder.decodeUnrealCrash(_data)   
         CrashArchive.buildZip(_files)
     
-    @events.on("crash_zipped")
+    """@events.on("crash_zipped")"""
     def onCrashZipped(self, _files : dict[str, bytes], _zip_path : str):
         crash_data = CrashDecoder.GetXMLData(self.data)
         crash_data["isLogPresent"] = "Yes" if any(name.endswith('.log') for name in _files) else "No"
         
         DiscordWebhook.sendToWebhook(self.buildDiscordMessage(crash_data, _zip_path))
     
-    def buildDiscordMessage(crash_data : dict[str, str], _zip_path : str) -> DiscordWebhookMessage:
-        _message : DiscordWebhookMessage = DiscordWebhookMessage()
-        
-        _message.author = f"CrashReport {time.strftime('%Y-%m-%d_%H_%M_%S')}"
-        _message.description =  f"**__Error message__**\n{crash_data.get('ErrorMessage', '?')}"
-        _message.color = 5814783
-        _message.contents = {
-            DiscordWebhookContent(
-                "__Play Info__",
-                (
-                    f"Platform : {crash_data.get('PlatformFullName', '?')}\n"
-                    f"Build : {crash_data.get('BuildConfiguration', '?')}\n"
-                    f"Engine Mode : {crash_data.get('EngineMode', '?')}"
-                )
-            ),
-            DiscordWebhookContent(
-                "__Crash Data__",
-                (
-                    f"Crash Version : {crash_data.get('CrashVersion', '?')}\n"
-                    f"Crash GUID : {crash_data.get('CrashGUID', '?')}\n"
-                    f"Crash Type : {crash_data.get('CrashType', '?')}"
-                )
-            ),
-            DiscordWebhookContent(
-                "__Is log present ?__",
-                str(crash_data.get('isLogPresent', '?'))
-            ),
-        }
-        _message.author = crash_data.get('GameName', '?')
-        _message.files = { _zip_path }
-        
+    def buildDiscordMessage(self, crash_data : dict[str, str], _zip_path : str) -> DiscordWebhookMessage:
+        _message : DiscordWebhookMessage = DiscordWebhookMessage (
+            title = f"CrashReport {time.strftime('%Y-%m-%d_%H_%M_%S')}",
+            description =  f"**__Error message__**\n{crash_data.get('ErrorMessage', '?')}",
+            color = 5814783,
+            contents = [
+                DiscordWebhookContent(
+                    "__Play Info__",
+                    (
+                        f"Platform : {crash_data.get('PlatformFullName', '?')}\n"
+                        f"Build : {crash_data.get('BuildConfiguration', '?')}\n"
+                        f"Engine Mode : {crash_data.get('EngineMode', '?')}"
+                    )
+                ),
+                DiscordWebhookContent(
+                    "__Crash Data__",
+                    (
+                        f"Crash Version : {crash_data.get('CrashVersion', '?')}\n"
+                        f"Crash GUID : {crash_data.get('CrashGUID', '?')}\n"
+                        f"Crash Type : {crash_data.get('CrashType', '?')}"
+                    )
+                ),
+                DiscordWebhookContent(
+                    "__Is log present ?__",
+                    str(crash_data.get('isLogPresent', '?'))
+                ),
+            ],
+            author = crash_data.get('GameName', '?'),
+            files = [ _zip_path ]
+        )
         return _message
         

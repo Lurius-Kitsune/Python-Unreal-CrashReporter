@@ -1,7 +1,7 @@
 
 from io import BytesIO
 import os, time, zipfile, logging
-import core
+from core.EventEmitter import events
 _logger = logging.getLogger(__name__)
 
 class CrashArchive():

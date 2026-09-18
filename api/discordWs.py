@@ -34,8 +34,7 @@ class DiscordWebhook:
     
     @staticmethod
     def sendToWebhook(_data : DiscordWebhookMessage):
-        WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK')
-        if(not WEBHOOK_URL or not str.__contains__(WEBHOOK_URL, "https://discord.com/api/webhooks/")):
+        if(not DiscordWebhook.WEBHOOK_URL or not str.__contains__(DiscordWebhook.WEBHOOK_URL, "https://discord.com/api/webhooks/")):
             _logger.warning("Discord webhook URL is not configured")
             return
         
@@ -60,17 +59,17 @@ class DiscordWebhook:
         #send json + file to webhook
         _nbFiles = len(_data.files)
         if _nbFiles <= 0:
-            response = requests.post(WEBHOOK_URL, json=payload)
+            response = requests.post(DiscordWebhook.WEBHOOK_URL, json=payload)
         else:
             # 1. Embed en premier
-            response = requests.post(WEBHOOK_URL, json=payload)
+            response = requests.post(DiscordWebhook.WEBHOOK_URL, json=payload)
             
             if response.status_code in (200, 204):
                 # 2. Fichier ensuite
                 for _file in _data.files:
                     with open(_file, "rb") as f:
                         response = requests.post(
-                            WEBHOOK_URL,
+                            DiscordWebhook.WEBHOOK_URL,
                             files={"file": (os.path.basename(_file), f, "application/zip")}
                         )
         
