@@ -99,4 +99,4 @@ def test_build_discord_message():
     assert message.author == "MyGame"
     assert message.files == [zip_path]
 
-    assert len(message.contents) == 3
+    assert len(message.contents) == 4

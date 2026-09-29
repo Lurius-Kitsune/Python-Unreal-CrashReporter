@@ -88,9 +88,13 @@ class CrashDecoder:
             if name.endswith('.xml'):
                 root = Et.fromstring(payload)
                 elements = next(iter(root), root)
-                if not list(elements):
-                    elements = root
-                return {elem.tag: elem.text or "" for elem in elements}
+                crash_data : dict [str, str] = {}
+                if list(root):
+                    for elements in root :
+                        if not list(elements):
+                            continue
+                        crash_data.update({elem.tag: elem.text or "" for elem in elements})
+                    return crash_data
         return {}
     
     @staticmethod
