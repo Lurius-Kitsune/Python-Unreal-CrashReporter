@@ -81,6 +81,12 @@ class App(metaclass=Singleton):
             color = 5814783,
             contents = [
                 DiscordWebhookContent(
+                    "__User Information__",
+                    (
+                        f"Computer Name : {crash_data.get('ComputerName', '?')}\n"
+                    )
+                ),
+                DiscordWebhookContent(
                     "__Play Info__",
                     (
                         f"Platform : {crash_data.get('PlatformFullName', '?')}\n"
